@@ -1,0 +1,10 @@
+name: Plotzy
+main: com.simplyian.mc.plotzy.Plotzy
+authors:
+  - AlbireoX
+description: A land purchase system for Bukkit
+version: 0.1
+commands:
+  pz:
+    description: Plotzy Base command
+    usage: /pz [utility]

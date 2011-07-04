@@ -61,6 +61,20 @@ public class Plotzy extends JavaPlugin {
      * @since 0.1
      */
     private final PlotzySL serverListener = new PlotzySL(this);
+        
+    /**
+     * Money
+     * 
+     * @since 0.1
+     */
+    public Money money = new Money(this);  
+    
+    /**
+     * Money
+     * 
+     * @since 0.1
+     */
+    public Commands commands = new Commands(this);
     
     /**
      * HashMap of player locations
@@ -121,7 +135,7 @@ public class Plotzy extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
         String command = cmd.getName().toLowerCase();
         if (command.equals("pz")) {
-            return Commands.pz(sender, commandLabel, args);
+            return this.commands.pz(sender, commandLabel, args);
         }
         return false;
     }

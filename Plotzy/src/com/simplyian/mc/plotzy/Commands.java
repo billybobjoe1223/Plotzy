@@ -32,6 +32,24 @@ import org.bukkit.entity.Player;
  */
 public class Commands {
     /**
+     * Plotzy instance
+     * 
+     * @since 0.1
+     */
+    private Plotzy pl;
+    
+    /**
+     * Constructor
+     * 
+     * @param instance 
+     * 
+     * @since 0.1
+     */
+    public Commands(Plotzy instance) {
+        pl = instance;
+    }
+    
+    /**
      * /pz command
      * 
      * @param sender
@@ -41,7 +59,7 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static boolean pz(CommandSender sender, String alias, String args[]) {
+    public boolean pz(CommandSender sender, String alias, String args[]) {
         if (args.length > 0) {
             String function = args[0].toLowerCase();
             String[] newArgs = shiftArgs(args);
@@ -53,6 +71,8 @@ public class Commands {
                 pzDelete(sender, newArgs);
             } else if (function.equals("expand")) {
                 pzExpand(sender, newArgs);
+            } else if (function.equals("shrink")) {
+                pzShrink(sender, newArgs);
             } else if (function.equals("info")) {
                 pzInfo(sender, newArgs);
             } else if (function.equals("test")) {
@@ -115,7 +135,7 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static void pzAbout(CommandSender sender, String[] args) {
+    public void pzAbout(CommandSender sender, String[] args) {
         sender.sendMessage("Plotzy v0.1 made by AlbireoX of www.simplyian.com");
     }
     
@@ -127,13 +147,13 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static void pzCreate(CommandSender sender, String[] args) {
+    public void pzCreate(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             if (args.length > 0) {
                 String plotName = argString(args);
                 Player player = (Player) sender;
                 double cost = 1000;
-                if (Money.get(player.getName()) >= cost) { //todo: make a config!
+                if (pl.money.get(player.getName()) >= cost) { //todo: make a config!
                     if (PlotFunctions.plotExists(plotName) == false) {
                         if (plotName.matches("[\\w\\s]+")) { //Alphanumeric, underscores, and spaces
                             String overlappingPlot = PlotFunctions.sphereOverlapsWhichPlotInfluenceName(player.getLocation(), 10);
@@ -168,7 +188,7 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static void pzDelete(CommandSender sender, String[] args) {
+    public void pzDelete(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
             String plot = PlotFunctions.inWhichPlot(player.getLocation());
@@ -196,20 +216,30 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static void pzExpand(CommandSender sender, String[] args) {
+    public void pzExpand(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
             String plot = PlotFunctions.inWhichPlot(player.getLocation());
             if (plot != null) {
                 if (PlotFunctions.canExpandPlot(plot, player)) {
+                    int byHowMuch = 1;
+                    if (args.length > 0) {
+                        try {
+                            byHowMuch = Integer.parseInt(args[0]);
+                        } catch (NumberFormatException ex) {
+                            sender.sendMessage(ChatColor.RED + "You can only expand a plot by an integer.");
+                            return;
+                        }
+                    }
                     double plotSize = PlotFunctions.getPlotSize(plot);
-                    double expandCost = plotSize * 10;
+                    double expandCost = (plotSize + byHowMuch) * 10;
                     String playerName = player.getName();
-                    if (Money.get(playerName) >= expandCost) {
-                        Money.subtract(playerName, expandCost);
-                        PlotFunctions.expandPlot(plot, 1);
+                    if (pl.money.get(playerName) >= expandCost) {
+                        pl.money.subtract(playerName, expandCost);
+                        PlotFunctions.expandPlot(plot, byHowMuch);
+                        sender.sendMessage("Plot expanded.");
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You need " + expandCost + " coins to expand this plot!");
+                        sender.sendMessage(ChatColor.RED + "You need " + expandCost + " coins to expand this plot by " + byHowMuch + "!");
                     }
                 } else {
                     sender.sendMessage(ChatColor.RED + "You do not have permission to expand this plot.");
@@ -229,13 +259,27 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static void pzShrink(CommandSender sender, String[] args) {
+    public void pzShrink(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
             String plot = PlotFunctions.inWhichPlot(player.getLocation());
             if (plot != null) {
                 if (PlotFunctions.canShrinkPlot(plot, player)) {
-                    PlotFunctions.shrinkPlot(plot, 1);
+                    int byHowMuch = 1;
+                    if (args.length > 0) {
+                        try {
+                            byHowMuch = Integer.parseInt(args[0]);
+                        } catch (NumberFormatException ex) {
+                            sender.sendMessage(ChatColor.RED + "You can only shrink a plot by an integer.");
+                            return;
+                        }
+                    }
+                    if (PlotFunctions.getPlotSize(plot) - byHowMuch >= 1) {
+                        PlotFunctions.shrinkPlot(plot, byHowMuch);
+                        sender.sendMessage("Plot shrunk.");
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "The size of your plot must always be at least 1.");
+                    }
                 } else {
                     sender.sendMessage(ChatColor.RED + "You do not have permission to shrink this plot.");
                 }
@@ -255,7 +299,7 @@ public class Commands {
      * 
      * @since 0.1
      */
-    public static void pzInfo(CommandSender sender, String[] args) {
+    public void pzInfo(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
             String plot = PlotFunctions.inWhichPlot(player.getLocation());
@@ -268,7 +312,7 @@ public class Commands {
                 }
                 Location plotCenter = PlotFunctions.getPlotCenter(plotSet);
                 double roundedDist = Math.round(plotCenter.distance(player.getLocation()) * 100) / 100;
-                double plotSize = PlotFunctions.getPlotSize(plotSet);
+                int plotSize = PlotFunctions.getPlotSize(plotSet);
                 String plotFounder = PlotFunctions.getPlotFounder(plotSet);
                 boolean isPrivate = PlotFunctions.plotIsPrivate(plot);
                 String privacy = isPrivate == true ? "Private" : "Public" ;

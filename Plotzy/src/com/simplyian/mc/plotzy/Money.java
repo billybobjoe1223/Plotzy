@@ -52,12 +52,8 @@ public class Money {
      * 
      * @since 0.1
      */
-    public static double get(String playerName) {
-        Method method = pl.Method;
-        System.out.print("Method: (" + method.toString() + ")");
-        MethodAccount account = method.getAccount(playerName);
-        System.out.print("Account: (" + account.toString() + ")");
-        return account.balance();
+    public double get(String playerName) {
+        return pl.Method.getAccount(playerName).balance();
     }
     
     /**
@@ -67,7 +63,7 @@ public class Money {
      * 
      * @since 0.1
      */
-    public static boolean add(String playerName, double amount) {
+    public boolean add(String playerName, double amount) {
         return pl.Method.getAccount(playerName).add(amount);
     }
     
@@ -78,7 +74,7 @@ public class Money {
      * 
      * @since 0.1
      */
-    public static boolean subtract(String playerName, double amount) {
+    public boolean subtract(String playerName, double amount) {
         return pl.Method.getAccount(playerName).subtract(amount);
     }
 }

@@ -92,7 +92,9 @@ public class PlotFunctions {
      */
     public static int getPlotSize(String plotName) {
         try {
-            return getPlotResultSet(plotName).getInt("pl_size");
+            ResultSet rs = getPlotResultSet(plotName);
+            rs.next();
+            return rs.getInt("pl_size");
         } catch (SQLException ex) {
             Database.sqlErrors(ex);
         }

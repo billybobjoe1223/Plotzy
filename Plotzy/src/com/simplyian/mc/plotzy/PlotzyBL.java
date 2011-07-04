@@ -18,8 +18,6 @@
 package com.simplyian.mc.plotzy;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockListener;

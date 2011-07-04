@@ -42,7 +42,7 @@ public class PlotFunctions {
      * 
      * @since 0.1
      */
-    private static boolean inSphere(Location loc, Location center, double radius) {
+    private static boolean inSphere(Location loc, Location center, int radius) {
         return Math.floor(loc.distanceSquared(center)) <= Math.pow(radius, 2D) ? true : false;
     }
     
@@ -62,7 +62,7 @@ public class PlotFunctions {
         } catch (SQLException ex) {
             Database.sqlErrors(ex);
         }
-        double plotSize = getPlotSize(plotResultSet);
+        int plotSize = getPlotSize(plotResultSet);
         Location plotCenter = getPlotCenter(plotResultSet);
         return inSphere(loc, plotCenter, plotSize);
     }
@@ -71,15 +71,32 @@ public class PlotFunctions {
      * Gets the size of a given plot via ResultSet.
      * 
      * @param plotResultSet ResultSet row of the plot
-     * @return Location
+     * @return Integer
      */
-    public static double getPlotSize(ResultSet plotResultSet) {
+    public static int getPlotSize(ResultSet plotResultSet) {
         try {
-            return plotResultSet.getDouble("pl_size");
+            return plotResultSet.getInt("pl_size");
         } catch (SQLException ex) {
             Database.sqlErrors(ex);
         }
-        return 0D;
+        return 0;
+    }    
+    
+    /**
+     * Gets the size of a given plot.
+     * 
+     * @param plotName
+     * @return String
+     * 
+     * @since 0.1
+     */
+    public static int getPlotSize(String plotName) {
+        try {
+            return getPlotResultSet(plotName).getInt("pl_size");
+        } catch (SQLException ex) {
+            Database.sqlErrors(ex);
+        }
+        return 0;
     }    
     
     /**
@@ -93,9 +110,9 @@ public class PlotFunctions {
     public static Location getPlotCenter(ResultSet plotResultSet) {
         try {
             World world = Bukkit.getServer().getWorld(plotResultSet.getString("pl_world"));
-            double x = plotResultSet.getDouble("pl_x");
-            double y = plotResultSet.getDouble("pl_y");
-            double z = plotResultSet.getDouble("pl_z");
+            int x = plotResultSet.getInt("pl_x");
+            int y = plotResultSet.getInt("pl_y");
+            int z = plotResultSet.getInt("pl_z");
             return new Location(world, x, y, z);
         } catch (SQLException ex) {
             Database.sqlErrors(ex);
@@ -145,7 +162,7 @@ public class PlotFunctions {
             ResultSet plots = getAllPlotsResultSet();
             while (plots.next()) {
                 Location plotCenter = getPlotCenter(plots);
-                double plotSize = getPlotSize(plots);
+                int plotSize = getPlotSize(plots);
                 if (inSphere(loc, plotCenter, plotSize)) {
                     return true;
                 }
@@ -170,7 +187,7 @@ public class PlotFunctions {
             ResultSet plots = getAllPlotsResultSet();
             while (plots.next()) {
                 Location plotCenter = getPlotCenter(plots);
-                double plotSize = getPlotSize(plots);
+                int plotSize = getPlotSize(plots);
                 if (inSphere(loc, plotCenter, plotSize)) {
                     return getPlotName(plots);
                 }
@@ -203,11 +220,11 @@ public class PlotFunctions {
      * 
      * @since 0.1
      */
-    public static void createPlot(String plotName, double size, Location center, String founder) {
+    public static void createPlot(String plotName, int size, Location center, String founder) {
         String world = center.getWorld().getName();
-        double x = center.getX();
-        double y = center.getY();
-        double z = center.getZ();
+        int x = center.getBlockX();
+        int y = center.getBlockY();
+        int z = center.getBlockZ();
         Database.execute("INSERT INTO " + Database.prefix + "plotzy_plots VALUES (0, '" + plotName + "', '" + size + "', '" + world + "', '" + x + "', '" + y + "', '" + z + "', '" + founder + "')");
     }
     
@@ -346,7 +363,7 @@ public class PlotFunctions {
      */
     public static void createDefaultPlotForPlayer(String plotName, Player player) {
         String playerName = player.getName();
-        createPlot(plotName, 10D, player.getLocation(), playerName);
+        createPlot(plotName, 10, player.getLocation(), playerName);
         addPlotRole(plotName, playerName, 1);
         addPlotFlag(plotName, "private", true);
     }
@@ -461,6 +478,38 @@ public class PlotFunctions {
         if (player.isOp()) return true;
         int role = getPlotRole(plotName, player.getName());
         return role == 1 ? true : false;
+    }    
+    
+    /**
+     * Checks if the player can expand the given plot.
+     * (Owner)
+     * 
+     * @param plotName
+     * @param player
+     * @return Boolean
+     * 
+     * @since 0.1
+     */
+    public static boolean canExpandPlot(String plotName, Player player) {
+        if (player.isOp()) return true;
+        int role = getPlotRole(plotName, player.getName());
+        return role == 1 ? true : false;
+    }    
+    
+    /**
+     * Checks if the player can shrink the given plot.
+     * (Owner)
+     * 
+     * @param plotName
+     * @param player
+     * @return Boolean
+     * 
+     * @since 0.1
+     */
+    public static boolean canShrinkPlot(String plotName, Player player) {
+        if (player.isOp()) return true;
+        int role = getPlotRole(plotName, player.getName());
+        return role == 1 ? true : false;
     }
     
     /**
@@ -540,5 +589,43 @@ public class PlotFunctions {
             Database.sqlErrors(ex);
         }
         return null;
+    }
+    
+    /**
+     * Sets the size of the plot.
+     * 
+     * @param plotName
+     * @param size 
+     * 
+     * @since 0.1
+     */
+    public static void setPlotSize(String plotName, int size) {
+        Database.execute("UPDATE " + Database.prefix + "plotzy_plots SET pl_size = '" + size + "' WHERE pl_name = '" + plotName + "'");
+    }
+    
+    /**
+     * Expands a plot.
+     * 
+     * @param plotName 
+     * @param byHowMuch Amount to expand by
+     * 
+     * @since 0.1
+     */
+    public static void expandPlot(String plotName, int byHowMuch) {
+        int size = getPlotSize(plotName);
+        setPlotSize(plotName, size + byHowMuch);
+    }
+    
+    /**
+     * Shrinks a plot.
+     * 
+     * @param plotName 
+     * @param byHowMuch Amount to shrink by
+     * 
+     * @since 0.1
+     */
+    public static void shrinkPlot(String plotName, int byHowMuch) {
+        int size = getPlotSize(plotName);
+        setPlotSize(plotName, size - byHowMuch);
     }
 }

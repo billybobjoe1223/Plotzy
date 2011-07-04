@@ -1,3 +1,0 @@
-==Plotzy==
---Todo--
-Readme

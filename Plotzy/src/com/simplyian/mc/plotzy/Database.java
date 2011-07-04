@@ -231,11 +231,11 @@ public class Database {
         execute("CREATE TABLE IF NOT EXISTS `" + prefix + "plotzy_plots` (" +
             "`pl_id` int(10) unsigned NOT NULL AUTO_INCREMENT," +
             "`pl_name` varchar(40) NOT NULL," +
-            "`pl_size` double(20, 0) NOT NULL," +
+            "`pl_size` int(10) NOT NULL," +
             "`pl_world` varchar(40) NOT NULL," +
-            "`pl_x` double(20, 0) NOT NULL," +
-            "`pl_y` double(20, 0) NOT NULL," +
-            "`pl_z` double(20, 0) NOT NULL," +
+            "`pl_x` int(10) NOT NULL," +
+            "`pl_y` int(10) NOT NULL," +
+            "`pl_z` int(10) NOT NULL," +
             "`pl_founder` varchar(40) NOT NULL," +
             "PRIMARY KEY (`pl_id`));");
         //Plot player table: pl_plotzy_players

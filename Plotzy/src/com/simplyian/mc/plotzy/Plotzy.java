@@ -17,6 +17,7 @@
  */
 package com.simplyian.mc.plotzy;
 
+import com.nijikokun.register.payment.Method;
 import java.util.HashMap;
 import java.util.logging.Logger;
 import org.bukkit.block.Block;
@@ -52,7 +53,14 @@ public class Plotzy extends JavaPlugin {
      * 
      * @since 0.1
      */
-    private final PlotzyPL playerListener = new PlotzyPL(this);
+    private final PlotzyPL playerListener = new PlotzyPL(this);    
+    
+    /**
+     * Server listener
+     * 
+     * @since 0.1
+     */
+    private final PlotzySL serverListener = new PlotzySL(this);
     
     /**
      * HashMap of player locations
@@ -60,6 +68,13 @@ public class Plotzy extends JavaPlugin {
      * @since 0.1
      */
     public HashMap<String, Block> playerLocs;
+    
+    /**
+     * Method of payment
+     * 
+     * @since 0.1
+     */
+    public Method Method = null;
     
     /**
      * Triggered on the enabling of the plugin.
@@ -74,8 +89,10 @@ public class Plotzy extends JavaPlugin {
         pm.registerEvent(Event.Type.BLOCK_PLACE, blockListener, Event.Priority.Normal, this);
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Event.Priority.Normal, this);
         pm.registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Event.Priority.Normal, this);
+        pm.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Event.Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Event.Priority.Monitor, this);
         playerLocs = new HashMap<String, Block>();
-        log.info("[Plotzy] Plugin enabled."); //sc19.servercraft.co:314
+        log.info("[Plotzy] Plugin enabled."); //sc19.servercraft.co:3145
     }
 
     /**
@@ -85,6 +102,7 @@ public class Plotzy extends JavaPlugin {
      */
     @Override
     public void onDisable() {
+        Method = null;
         log.info("[Plotzy] Plugin disabled.");
     }
     

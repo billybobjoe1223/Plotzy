@@ -43,7 +43,7 @@ public class Commands {
      */
     public static boolean pz(CommandSender sender, String alias, String args[]) {
         if (args.length > 0) {
-            String function = args[0];
+            String function = args[0].toLowerCase();
             String[] newArgs = shiftArgs(args);
             if (function.equals("about")) {
                 pzAbout(sender, newArgs);
@@ -51,6 +51,8 @@ public class Commands {
                 pzCreate(sender, newArgs);
             } else if (function.equals("delete")) {
                 pzDelete(sender, newArgs);
+            } else if (function.equals("expand")) {
+                pzExpand(sender, newArgs);
             } else if (function.equals("info")) {
                 pzInfo(sender, newArgs);
             } else if (function.equals("test")) {
@@ -129,21 +131,26 @@ public class Commands {
         if (sender instanceof Player) {
             if (args.length > 0) {
                 String plotName = argString(args);
-                if (PlotFunctions.plotExists(plotName) == false) {
-                    if (plotName.matches("[\\w\\s]+")) { //Alphanumeric, underscores, and spaces
-                        Player player = (Player) sender;
-                        String overlappingPlot = PlotFunctions.sphereOverlapsWhichPlotInfluenceName(player.getLocation(), 10);
-                        if (overlappingPlot == null) {
-                            PlotFunctions.createDefaultPlotForPlayer(plotName, player);
-                            sender.sendMessage("You have created the plot " + plotName + ".");
+                Player player = (Player) sender;
+                double cost = 1000;
+                if (Money.get(player.getName()) >= cost) { //todo: make a config!
+                    if (PlotFunctions.plotExists(plotName) == false) {
+                        if (plotName.matches("[\\w\\s]+")) { //Alphanumeric, underscores, and spaces
+                            String overlappingPlot = PlotFunctions.sphereOverlapsWhichPlotInfluenceName(player.getLocation(), 10);
+                            if (overlappingPlot == null) {
+                                PlotFunctions.createDefaultPlotForPlayer(plotName, player);
+                                sender.sendMessage("You have created the plot " + plotName + ".");
+                            } else {
+                                sender.sendMessage(ChatColor.RED + "Cannot create a plot here, doing so would overlap the influence of " + overlappingPlot + ".");
+                            }
                         } else {
-                            sender.sendMessage(ChatColor.RED + "Cannot create a plot here, doing so would overlap the influence of " + overlappingPlot + ".");
+                            sender.sendMessage(ChatColor.RED + "Plot name can only contain alphanumeric characters, underscores, and/or spaces.");
                         }
                     } else {
-                        sender.sendMessage(ChatColor.RED + "Plot name can only contain alphanumeric characters, underscores, and/or spaces.");
+                        sender.sendMessage(ChatColor.RED + "There is already a plot with the name " + plotName + ".");
                     }
                 } else {
-                    sender.sendMessage(ChatColor.RED + "There is already a plot with the name " + plotName + ".");
+                    sender.sendMessage(ChatColor.RED + "You need " + cost + " coins to purchase a plot!");
                 }
             } else {
                 sender.sendMessage(ChatColor.YELLOW + "Usage: /pz create [Plot name]");
@@ -181,6 +188,73 @@ public class Commands {
         }
     }
     
+    /**
+     * Expands the size of the plot.
+     * 
+     * @param sender
+     * @param args 
+     * 
+     * @since 0.1
+     */
+    public static void pzExpand(CommandSender sender, String[] args) {
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            if (plot != null) {
+                if (PlotFunctions.canExpandPlot(plot, player)) {
+                    double plotSize = PlotFunctions.getPlotSize(plot);
+                    double expandCost = plotSize * 10;
+                    String playerName = player.getName();
+                    if (Money.get(playerName) >= expandCost) {
+                        Money.subtract(playerName, expandCost);
+                        PlotFunctions.expandPlot(plot, 1);
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You need " + expandCost + " coins to expand this plot!");
+                    }
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to expand this plot.");
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You aren't in a plot!");
+            }
+        } else {
+            sender.sendMessage("[Plotzy] This command is for in-game use only.");
+        }
+    }    
+    /**
+     * Shrinks the size of the plot.
+     * 
+     * @param sender
+     * @param args 
+     * 
+     * @since 0.1
+     */
+    public static void pzShrink(CommandSender sender, String[] args) {
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            if (plot != null) {
+                if (PlotFunctions.canShrinkPlot(plot, player)) {
+                    PlotFunctions.shrinkPlot(plot, 1);
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to shrink this plot.");
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You aren't in a plot!");
+            }
+        } else {
+            sender.sendMessage("[Plotzy] This command is for in-game use only.");
+        }
+    }
+    
+    /**
+     * Returns some useful plot info.
+     * 
+     * @param sender
+     * @param args 
+     * 
+     * @since 0.1
+     */
     public static void pzInfo(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;

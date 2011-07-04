@@ -17,6 +17,9 @@
  */
 package com.simplyian.mc.plotzy;
 
+import com.nijikokun.register.payment.Method;
+import com.nijikokun.register.payment.Method.MethodAccount;
+
 /**
  * Money Class
  * 
@@ -25,25 +28,36 @@ package com.simplyian.mc.plotzy;
  */
 public class Money {
     /**
+     * Plotzy Main Class
+     * 
+     * @since 0.1
+     */
+    private static Plotzy pl;
+    
+    /**
+     * Constructor
+     * 
+     * @param instance 
+     * 
+     * @since 0.1
+     */
+    public Money(Plotzy instance) {
+        pl = instance;
+    }
+    
+    /**
      * Gets the money of the player.
      * 
      * @param playerName 
      * 
      * @since 0.1
      */
-    public static void get(String playerName) {
-        
-    }
-    
-    /**
-     * Sets the money of the player.
-     * 
-     * @param playerName 
-     * 
-     * @since 0.1
-     */
-    public static void set(String playerName) {
-        
+    public static double get(String playerName) {
+        Method method = pl.Method;
+        System.out.print("Method: (" + method.toString() + ")");
+        MethodAccount account = method.getAccount(playerName);
+        System.out.print("Account: (" + account.toString() + ")");
+        return account.balance();
     }
     
     /**
@@ -53,8 +67,8 @@ public class Money {
      * 
      * @since 0.1
      */
-    public static void add(String playerName) {
-        
+    public static boolean add(String playerName, double amount) {
+        return pl.Method.getAccount(playerName).add(amount);
     }
     
     /**
@@ -64,7 +78,7 @@ public class Money {
      * 
      * @since 0.1
      */
-    public static void subtract(String playerName) {
-        
+    public static boolean subtract(String playerName, double amount) {
+        return pl.Method.getAccount(playerName).subtract(amount);
     }
 }

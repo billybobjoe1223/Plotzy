@@ -17,13 +17,17 @@
  */
 package com.simplyian.mc.plotzy;
 
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.register.payment.Method;
 import java.util.HashMap;
 import java.util.logging.Logger;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -91,6 +95,13 @@ public class Plotzy extends JavaPlugin {
     public Method Method = null;
     
     /**
+     * Permissions handler
+     * 
+     * @since 0.2
+     */
+    public static PermissionHandler permissionHandler;
+    
+    /**
      * Triggered on the enabling of the plugin.
      * 
      * @since 0.1
@@ -106,6 +117,7 @@ public class Plotzy extends JavaPlugin {
         pm.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Event.Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Event.Priority.Monitor, this);
         playerLocs = new HashMap<String, Block>();
+        setupPermissions(); //Permissions support @since 0.2
         log.info("[Plotzy] Plugin enabled."); //sc19.servercraft.co:3145
     }
 
@@ -134,9 +146,47 @@ public class Plotzy extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
         String command = cmd.getName().toLowerCase();
-        if (command.equals("pz")) {
-            return this.commands.pz(sender, commandLabel, args);
-        }
+        if (command.equals("pz")) return this.commands.pz(sender, commandLabel, args);
         return false;
+    }
+    
+    /**
+     * Permissions support
+     * 
+     * @since 0.2
+     */
+    private void setupPermissions() {
+        if (permissionHandler != null) return;
+        Plugin permissionsPlugin = this.getServer().getPluginManager().getPlugin("Permissions");
+        if (permissionsPlugin == null) {
+            this.cnsl("Permission system not detected, defaulting to OP");
+            return;
+        }
+        permissionHandler = ((Permissions) permissionsPlugin).getHandler();
+        this.cnsl("Found and will use plugin "+((Permissions)permissionsPlugin).getDescription().getFullName());
+    }
+    
+    /**
+     * Output to console with prefix
+     * 
+     * @param msg 
+     * 
+     * @since 0.2
+     */
+    public void cnsl(String msg) {
+        this.log.info("[Plotzy] " + msg);
+    }
+    
+    /**
+     * Permission checker
+     * 
+     * @param player
+     * @param permission
+     * @return boolean
+     * 
+     * @since 0.1
+     */
+    public static boolean hasPermission(Player player, String permission) {
+        return permissionHandler.has(player, permission) ? true : false;
     }
 }

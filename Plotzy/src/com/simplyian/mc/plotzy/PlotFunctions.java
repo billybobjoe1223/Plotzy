@@ -222,12 +222,12 @@ public class PlotFunctions {
      * 
      * @since 0.1
      */
-    public static void createPlot(String plotName, int size, Location center, String founder) {
+    public static void createPlot(String plotName, int size, Location center) {
         String world = center.getWorld().getName();
         int x = center.getBlockX();
         int y = center.getBlockY();
         int z = center.getBlockZ();
-        Database.execute("INSERT INTO " + Database.prefix + "plotzy_plots VALUES (0, '" + plotName + "', '" + size + "', '" + world + "', '" + x + "', '" + y + "', '" + z + "', '" + founder + "')");
+        Database.execute("INSERT INTO " + Database.prefix + "plotzy_plots VALUES (0, '" + plotName + "', '" + size + "', '" + world + "', '" + x + "', '" + y + "', '" + z + "')");
     }
     
     /**
@@ -281,24 +281,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static String getPlotFounder(String plotName) {
-        return Database.getString("SELECT pl_founder FROM " + Database.prefix + "plotzy_plots WHERE pl_name = '" + plotName + "'");
-    }    
-    
-    /**
-     * Gets the plot founder's name.
-     * 
-     * @param plot ResultSet of the plot
-     * @return 
-     * 
-     * @since 0.1
-     */
-    public static String getPlotFounder(ResultSet plot) {
-        try {
-            return plot.getString("pl_founder");
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        return null;
+        return getPlotFlagString(plotName, "founder");
     }
     
     /**
@@ -365,9 +348,10 @@ public class PlotFunctions {
      */
     public static void createDefaultPlotForPlayer(String plotName, Player player) {
         String playerName = player.getName();
-        createPlot(plotName, 10, player.getLocation(), playerName);
+        createPlot(plotName, 10, player.getLocation());
         addPlotRole(plotName, playerName, 1);
         addPlotFlag(plotName, "private", true);
+        addPlotFlag(plotName, "founder", playerName);
     }
     
     /**
@@ -406,6 +390,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canBreakBlocksInPlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.block.break")) return true;
         if (player.isOp()) return true;
         int role = getPlotRole(plotName, player.getName());
         return role == 1 || role == 2 ? true : false;
@@ -422,6 +407,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canPlaceBlocksInPlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.block.place")) return true;
         if (player.isOp()) return true;
         int role = getPlotRole(plotName, player.getName());
         return role == 1 || role == 2 || role == 3 ? true : false;
@@ -438,6 +424,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canUseButtonsInPlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.use.buttons")) return true;
         if (player.isOp()) return true;
         if (plotIsPrivate(plotName)) {
             int role = getPlotRole(plotName, player.getName());
@@ -457,6 +444,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canUseLeversInPlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.use.levers")) return true;
         if (player.isOp()) return true;
         if (plotIsPrivate(plotName)) {
             int role = getPlotRole(plotName, player.getName());
@@ -477,6 +465,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canDeletePlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.delete")) return true;
         if (player.isOp()) return true;
         int role = getPlotRole(plotName, player.getName());
         return role == 1 ? true : false;
@@ -493,6 +482,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canExpandPlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.expand")) return true;
         if (player.isOp()) return true;
         int role = getPlotRole(plotName, player.getName());
         return role == 1 ? true : false;
@@ -509,6 +499,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean canShrinkPlot(String plotName, Player player) {
+        if (Plotzy.hasPermission(player, "plotzy.admin.shrink")) return true;
         if (player.isOp()) return true;
         int role = getPlotRole(plotName, player.getName());
         return role == 1 ? true : false;

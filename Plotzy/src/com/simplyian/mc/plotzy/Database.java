@@ -116,6 +116,9 @@ public class Database {
         setValue("mysql.username", "MyUser1");
         setValue("mysql.password", "thisisastupidpassword");
         setValue("mysql.prefix", "pl_");
+        //Costs
+        setValue("plot.cost_create", 1000);
+        setValue("plot.cost_expand", 10);
     }
     
     /**
@@ -154,6 +157,16 @@ public class Database {
     private static String readString(String key) {
         Configuration config = loadConfig();
         return config.getString(key, null);
+    }    
+    
+    /**
+     * Reads the value of an integer from the config file
+     * 
+     * @param key Key name
+     */
+    public static int readInt(String key) {
+        Configuration config = loadConfig();
+        return config.getInt(key, 0);
     }
     
     /**
@@ -236,7 +249,6 @@ public class Database {
             "`pl_x` int(10) NOT NULL," +
             "`pl_y` int(10) NOT NULL," +
             "`pl_z` int(10) NOT NULL," +
-            "`pl_founder` varchar(40) NOT NULL," +
             "PRIMARY KEY (`pl_id`));");
         //Plot player table: pl_plotzy_players
         execute("CREATE TABLE IF NOT EXISTS `" + prefix + "plotzy_players` (" +
@@ -252,11 +264,6 @@ public class Database {
             "`fl_flag` varchar(40) NOT NULL," +
             "`fl_value` text NOT NULL," +
             "PRIMARY KEY (`fl_id`));");
-        execute("CREATE TABLE IF NOT EXISTS `" + prefix + "plotzy_options` (" +
-            "`op_id` int(10) unsigned NOT NULL AUTO_INCREMENT," +
-            "`op_name` varchar(40) NOT NULL," +
-            "`op_value` text NOT NULL," +
-            "PRIMARY KEY (`op_id`));");
     }
  
     /**

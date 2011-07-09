@@ -17,9 +17,6 @@
  */
 package com.simplyian.mc.plotzy;
 
-import com.nijikokun.register.payment.Method;
-import com.nijikokun.register.payment.Method.MethodAccount;
-
 /**
  * Money Class
  * 

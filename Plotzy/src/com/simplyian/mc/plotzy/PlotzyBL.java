@@ -35,7 +35,7 @@ public class PlotzyBL extends BlockListener {
      * 
      * @since 0.1
      */
-    private static Plotzy pl;
+    private static Plotzy pz;
     
     /**
      * Constructor
@@ -45,7 +45,7 @@ public class PlotzyBL extends BlockListener {
      * @since 0.1
      */
     PlotzyBL(Plotzy instance) {
-        pl = instance;
+        pz = instance;
     }
     
     /**
@@ -63,8 +63,8 @@ public class PlotzyBL extends BlockListener {
             String plotName = PlotFunctions.inWhichPlot(event.getBlock().getLocation());
             if (plotName != null) { //Separating if blocks to prevent an unnecessary transaction
                 if (PlotFunctions.canBreakBlocksInPlot(plotName, player) == false) {
-                    event.setCancelled(true);
                     player.sendMessage(ChatColor.RED + "Sorry, you don't have permission to break blocks in " + plotName + ".");
+                    event.setCancelled(true);
                 }
             }
         }
@@ -85,8 +85,8 @@ public class PlotzyBL extends BlockListener {
             String plotName = PlotFunctions.inWhichPlot(event.getBlock().getLocation());
             if (plotName != null) { //Separating if blocks to prevent an unnecessary transaction
                 if (PlotFunctions.canPlaceBlocksInPlot(plotName, player) == false) {
-                    event.setCancelled(true);
                     player.sendMessage(ChatColor.RED + "Sorry, you don't have permission to place blocks in " + plotName + ".");
+                    event.setCancelled(true);
                 }
             }
         }

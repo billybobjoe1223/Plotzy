@@ -93,6 +93,7 @@ public class Database {
     public static void initCfg(){
         new File("plugins" + File.separator + "Plotzy").mkdir(); //Make the directory
         if(!config_file.exists()){
+            pl.cnsl("The config file doesn't exist. Unpredictable results!");
             try {
                 config_file.createNewFile(); //Create the config file if it's not here already
                 generateDefaults(); //Apply the default settings to the file

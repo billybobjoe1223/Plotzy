@@ -36,7 +36,7 @@ public class PlotzyPL extends PlayerListener {
      * 
      * @since 0.1
      */
-    private static Plotzy pl;
+    private static Plotzy pz;
     
     /**
      * Constructor
@@ -46,7 +46,7 @@ public class PlotzyPL extends PlayerListener {
      * @since 0.1
      */
     public PlotzyPL(Plotzy instance) {
-        pl = instance;
+        pz = instance;
     }
     
     /**
@@ -63,23 +63,23 @@ public class PlotzyPL extends PlayerListener {
         String pname = player.getName();
         Block oldBlock;
         Block newBlock = player.getLocation().getBlock();
-        oldBlock = pl.playerLocs.containsKey(pname) == true ? pl.playerLocs.get(pname) : newBlock;
-        pl.playerLocs.put(pname, newBlock);
+        oldBlock = pz.playerLocs.containsKey(pname) == true ? pz.playerLocs.get(pname) : newBlock;
+        pz.playerLocs.put(pname, newBlock);
         if (oldBlock != newBlock) {
-            String oldPlot = PlotFunctions.inWhichPlot(oldBlock.getLocation());
-            String newPlot = PlotFunctions.inWhichPlot(newBlock.getLocation());
+            Plot oldPlot = PlotFunctions.inWhichPlot(oldBlock.getLocation());
+            Plot newPlot = PlotFunctions.inWhichPlot(newBlock.getLocation());
             if (oldPlot == null && newPlot == null) { //Walking through wilderness
                 //player.sendMessage("You are in wilderness.");
             } else if (oldPlot == null && newPlot != null) { //Into a plot named newPlot
-                player.sendMessage("You have entered " + newPlot);
+                player.sendMessage("You have entered " + newPlot.getName() + ".");
             } else if (oldPlot != null && newPlot == null) { //Out of a plot named oldPlot
-                player.sendMessage("You have left " + oldPlot);
+                player.sendMessage("You have left " + oldPlot.getName() + ".");
             } else if (oldPlot.equals(newPlot)) { //Moving through a plot
                 //player.sendMessage("You are moving through " + newPlot + ".");
             } else if (!oldPlot.equals(newPlot)) { //Moving between plots
-                player.sendMessage("You have left " + oldPlot + " and entered " + newPlot + ".");
+                player.sendMessage("You have left " + oldPlot.getName() + " and entered " + newPlot.getName() + ".");
             } else {
-                pl.log.info("[Plotzy] onPlayerMove error");
+                pz.cnsl("onPlayerMove error");
                 player.sendMessage("Plot error");
             }
         }
@@ -96,22 +96,20 @@ public class PlotzyPL extends PlayerListener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.isCancelled()) return;
         int interactedWith = event.getClickedBlock().getTypeId();
-        if (interactedWith == 69) { //lever
+        if (interactedWith == 69 || interactedWith == 77) { //lever or button
             Player player = event.getPlayer();
-            String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            Plot plot = PlotFunctions.inWhichPlot(player.getLocation());
             if (plot != null) {
-                if (PlotFunctions.canUseLeversInPlot(plot, player) == false) {
-                    player.sendMessage(ChatColor.RED + "You can't use levers in a private plot that isn't yours.");
-                    event.setCancelled(true);
-                }
-            }
-        } else if (interactedWith == 77) { //button
-            Player player = event.getPlayer();
-            String plot = PlotFunctions.inWhichPlot(player.getLocation());
-            if (plot != null) {
-                if (PlotFunctions.canUseButtonsInPlot(plot, player) == false) {
-                    player.sendMessage(ChatColor.RED + "You can't use buttons in a private plot that isn't yours.");
-                    event.setCancelled(true);
+                if (interactedWith == 69) { //lever
+                    if (plot.canUseLevers(player) == false) {
+                        player.sendMessage(ChatColor.RED + "You can't use levers in a private plot that isn't yours.");
+                        event.setCancelled(true);
+                    }
+                } else if (interactedWith == 77) { //button
+                    if (plot.canUseButtons(player) == false) {
+                        player.sendMessage(ChatColor.RED + "You can't use buttons in a private plot that isn't yours.");
+                        event.setCancelled(true);
+                    }
                 }
             }
         }

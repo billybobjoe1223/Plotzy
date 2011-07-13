@@ -17,10 +17,7 @@
  */
 package com.simplyian.mc.plotzy;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -63,7 +60,9 @@ public class Commands {
         if (args.length > 0) {
             String function = args[0].toLowerCase();
             String[] newArgs = shiftArgs(args);
-            if (function.equals("about")) {
+            if (function.equals("help")) {
+                pzHelp(sender, newArgs);
+            } else if (function.equals("about")) {
                 pzAbout(sender, newArgs);
             } else if (function.equals("create")) {
                 pzCreate(sender, newArgs);
@@ -80,23 +79,12 @@ public class Commands {
                 //Player player = (Player) sender;
                 //SpookyRoomGen.spookyRoomGen(player.getLocation());
             } else {
-                noArgsError(sender);
+                pzHelp(sender, newArgs);
             }
         } else {
-            noArgsError(sender);
+            pzHelp(sender, args);
         }
         return true;
-    }
-    
-    /**
-     * Error to display if no args are returned.
-     * 
-     * @param sender 
-     * 
-     * @since 0.1
-     */
-    public static void noArgsError(CommandSender sender) {
-        sender.sendMessage("Documentation coming soon.");
     }
     
     /**
@@ -140,6 +128,23 @@ public class Commands {
     }
     
     /**
+     * Displays usage on the /pz command.
+     * 
+     * @param sender
+     * @param args 
+     * 
+     * @since 0.3
+     */
+    public void pzHelp(CommandSender sender, String[] args) {
+        sender.sendMessage("Usage: /pz <command>");
+        sender.sendMessage("create - " + ChatColor.YELLOW + " Creates a default plot at your location.");
+        sender.sendMessage("delete - " + ChatColor.YELLOW + " Deletes the plot you are in.");
+        sender.sendMessage("expand - " + ChatColor.YELLOW + " Expands the plot you are in.");
+        sender.sendMessage("shrink - " + ChatColor.YELLOW + " Shrinks the plot you are in.");
+        sender.sendMessage("info - " + ChatColor.YELLOW + " Gets information about the current plot.");
+    }
+    
+    /**
      * Creates a new plot owned by the command executor.
      * 
      * @param sender
@@ -150,25 +155,35 @@ public class Commands {
     public void pzCreate(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (pl.hasPermission(player, "plotzy.plot.create")) {
+            if (Plotzy.hasPermission(player, "plotzy.plot.create")) {
                 if (args.length > 0) {
                     String plotName = argString(args);
-                    double cost = Database.readInt("plot.cost_create");
-                    if (pl.money.get(player.getName()) >= cost) { //todo: make a config!
-                        if (PlotFunctions.plotExists(plotName) == false) {
-                            if (plotName.matches("[\\w\\s]+")) { //Alphanumeric, underscores, and spaces
-                                String overlappingPlot = PlotFunctions.sphereOverlapsWhichPlotInfluenceName(player.getLocation(), 10);
-                                if (overlappingPlot == null) {
-                                    PlotFunctions.createDefaultPlotForPlayer(plotName, player);
-                                    sender.sendMessage("You have created the plot " + plotName + ".");
+                    double cost = PlotFunctions.getDefaultCreateCost();
+                    if (Money.get(player.getName()) >= cost) {
+                        int playerPlots = Database.getInteger("SELECT COUNT(*) FROM " + Database.prefix + "plotzy_players WHERE py_role = '1' AND py_player = '" + player.getName() + "'");
+                        int maxPlots = PlotFunctions.getMaxPlotsPerPlayer();
+                        if (playerPlots < maxPlots) {
+                            if (PlotFunctions.plotExists(plotName.toLowerCase()) == false) {
+                                if (plotName.matches("[\\w\\s]+")) { //Alphanumeric, underscores, and spaces
+                                    String overlappingPlot = PlotFunctions.getOverlappingPlot(player.getLocation(), PlotFunctions.getDefaultRadius());
+                                    if (overlappingPlot == null) {
+                                        String playerName = player.getName();
+                                        Plot newPlot = PlotFunctions.createPlot(plotName, player.getLocation(), PlotFunctions.getDefaultRadius());
+                                        newPlot.setRole(playerName, 1);
+                                        newPlot.setFlag("private", true);
+                                        newPlot.setFlag("founder", playerName);
+                                        sender.sendMessage("You have created the plot " + plotName + ".");
+                                    } else {
+                                        sender.sendMessage(ChatColor.RED + "Cannot create a plot here, doing so would overlap the influence of " + overlappingPlot + ".");
+                                    }
                                 } else {
-                                    sender.sendMessage(ChatColor.RED + "Cannot create a plot here, doing so would overlap the influence of " + overlappingPlot + ".");
+                                    sender.sendMessage(ChatColor.RED + "Plot name can only contain alphanumeric characters, underscores, and/or spaces.");
                                 }
                             } else {
-                                sender.sendMessage(ChatColor.RED + "Plot name can only contain alphanumeric characters, underscores, and/or spaces.");
+                                sender.sendMessage(ChatColor.RED + "There is already a plot with the name " + plotName + ".");
                             }
                         } else {
-                            sender.sendMessage(ChatColor.RED + "There is already a plot with the name " + plotName + ".");
+                            sender.sendMessage(ChatColor.RED + "You can only own up to " + PlotFunctions.getMaxPlotsPerPlayer() + " plots!");
                         }
                     } else {
                         sender.sendMessage(ChatColor.RED + "You need " + cost + " coins to purchase a plot!");
@@ -195,13 +210,13 @@ public class Commands {
     public void pzDelete(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (pl.hasPermission(player, "plotzy.plot.delete")) {
-                String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            if (Plotzy.hasPermission(player, "plotzy.plot.delete")) {
+                Plot plot = PlotFunctions.inWhichPlot(player.getLocation());
                 if (plot != null) {
-                    if (PlotFunctions.canDeletePlot(plot, player) == true) {
+                    if (plot.canDelete(player) == true) {
                         //Erm... @todo Confirmation "are you sure you want to delete plotname?"
                         PlotFunctions.deletePlot(plot);
-                        sender.sendMessage("You have successfully deleted the plot " + plot + ".");
+                        sender.sendMessage("You have successfully deleted the plot " + plot.getName() + ".");
                     } else {
                         sender.sendMessage(ChatColor.RED + "You cannot delete a plot that you don't own!");
                     }
@@ -227,10 +242,10 @@ public class Commands {
     public void pzExpand(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (pl.hasPermission(player, "plotzy.plot.expand")) {
-                String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            if (Plotzy.hasPermission(player, "plotzy.plot.expand")) {
+                Plot plot = PlotFunctions.inWhichPlot(player.getLocation());
                 if (plot != null) {
-                    if (PlotFunctions.canExpandPlot(plot, player)) {
+                    if (plot.canExpand(player) == true) {
                         int byHowMuch = 1;
                         if (args.length > 0) {
                             try {
@@ -240,15 +255,19 @@ public class Commands {
                                 return;
                             }
                         }
-                        double plotSize = PlotFunctions.getPlotSize(plot);
-                        double expandCost = (plotSize + byHowMuch) * Database.readInt("plot.cost_expand");
-                        String playerName = player.getName();
-                        if (pl.money.get(playerName) >= expandCost) {
-                            pl.money.subtract(playerName, expandCost);
-                            PlotFunctions.expandPlot(plot, byHowMuch);
-                            sender.sendMessage("Plot expanded.");
+                        double plotSize = plot.getSize();
+                        if (plotSize + byHowMuch <= PlotFunctions.getMaxSizeAllowed()) {
+                            double expandCost = (plotSize + byHowMuch) * PlotFunctions.getDefaultExpandMultiplier();
+                            String playerName = player.getName();
+                            if (Money.get(playerName) >= expandCost) {
+                                Money.subtract(playerName, expandCost);
+                                plot.expand(byHowMuch);
+                                sender.sendMessage("Plot expanded.");
+                            } else {
+                                sender.sendMessage(ChatColor.RED + "You need " + expandCost + " coins to expand this plot by " + byHowMuch + "!");
+                            }
                         } else {
-                            sender.sendMessage(ChatColor.RED + "You need " + expandCost + " coins to expand this plot by " + byHowMuch + "!");
+                            sender.sendMessage(ChatColor.RED + "The maximum plot size is " + PlotFunctions.getMaxSizeAllowed() + ".");
                         }
                     } else {
                         sender.sendMessage(ChatColor.RED + "You do not have permission to expand this plot.");
@@ -274,10 +293,10 @@ public class Commands {
     public void pzShrink(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (pl.hasPermission(player, "plotzy.plot.shrink")) {
-                String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            if (Plotzy.hasPermission(player, "plotzy.plot.shrink")) {
+                Plot plot = PlotFunctions.inWhichPlot(player.getLocation());
                 if (plot != null) {
-                    if (PlotFunctions.canShrinkPlot(plot, player)) {
+                    if (plot.canShrink(player)) {
                         int byHowMuch = 1;
                         if (args.length > 0) {
                             try {
@@ -287,8 +306,8 @@ public class Commands {
                                 return;
                             }
                         }
-                        if (PlotFunctions.getPlotSize(plot) - byHowMuch >= 1) {
-                            PlotFunctions.shrinkPlot(plot, byHowMuch);
+                        if (plot.getSize() - byHowMuch >= 1) {
+                            plot.shrink(byHowMuch);
                             sender.sendMessage("Plot shrunk.");
                         } else {
                             sender.sendMessage(ChatColor.RED + "The size of your plot must always be at least 1.");
@@ -318,24 +337,13 @@ public class Commands {
     public void pzInfo(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (pl.hasPermission(player, "plotzy.info")) {
-                String plot = PlotFunctions.inWhichPlot(player.getLocation());
+            if (Plotzy.hasPermission(player, "plotzy.info")) {
+                Plot plot = PlotFunctions.inWhichPlot(player.getLocation());
                 if (plot != null) {
-                    ResultSet plotSet = PlotFunctions.getPlotResultSet(plot);
-                    try {
-                        plotSet.next();
-                    } catch (SQLException ex) {
-                        Database.sqlErrors(ex);
-                    }
-                    Location plotCenter = PlotFunctions.getPlotCenter(plotSet);
-                    double roundedDist = Math.round(plotCenter.distance(player.getLocation()) * 100) / 100;
-                    int plotSize = PlotFunctions.getPlotSize(plotSet);
-                    String plotFounder = PlotFunctions.getPlotFounder(plot);
-                    boolean isPrivate = PlotFunctions.plotIsPrivate(plot);
-                    String privacy = isPrivate == true ? "Private" : "Public" ;
+                    String privacy = plot.getFlagBoolean("private") == true ? "Private" : "Public" ;
                     sender.sendMessage(ChatColor.GREEN + "Plot Information:");
-                    sender.sendMessage(ChatColor.YELLOW + "Name: " + ChatColor.WHITE + plot + ChatColor.YELLOW + "    Size: " + ChatColor.WHITE + plotSize + ChatColor.YELLOW + "    Founder: " + ChatColor.WHITE + plotFounder);
-                    sender.sendMessage(ChatColor.YELLOW + "Privacy: " + ChatColor.WHITE + privacy + ChatColor.YELLOW + "    Distance from center: " + ChatColor.WHITE + roundedDist);
+                    sender.sendMessage(ChatColor.YELLOW + "Name: " + ChatColor.WHITE + plot.getName() + ChatColor.YELLOW + "    Size: " + ChatColor.WHITE + plot.getSize() + ChatColor.YELLOW + "    Founder: " + ChatColor.WHITE + plot.getFlag("founder"));
+                    sender.sendMessage(ChatColor.YELLOW + "Privacy: " + ChatColor.WHITE + privacy + ChatColor.YELLOW + "    Distance from center: " + ChatColor.WHITE + plot.getCenter().distance(player.getLocation()));
                 } else {
                     sender.sendMessage(ChatColor.RED + "You are not in a plot!");
                 }

@@ -119,6 +119,8 @@ public class Database {
         //Costs
         setValue("plot.cost_create", 1000);
         setValue("plot.cost_expand", 10);
+        setValue("plot.max_size", 100);
+        setValue("plot.max_plots_per_player", 10);
     }
     
     /**
@@ -163,6 +165,10 @@ public class Database {
      * Reads the value of an integer from the config file
      * 
      * @param key Key name
+     * @return 
+     * @return Integer value
+     * 
+     * @since 0.3
      */
     public static int readInt(String key) {
         Configuration config = loadConfig();
@@ -269,7 +275,7 @@ public class Database {
     /**
      * Executes an SQL query. (No output)
      * 
-     * @param query
+     * @param sql The SQL query as a string.
      * 
      * @since 0.1
      */

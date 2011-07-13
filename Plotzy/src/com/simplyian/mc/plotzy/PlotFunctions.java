@@ -17,12 +17,7 @@
  */
 package com.simplyian.mc.plotzy;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
 
 /**
  * Plot Functions
@@ -32,185 +27,36 @@ import org.bukkit.entity.Player;
  */
 public class PlotFunctions {
     /**
-     * Checks if the given location is within the sphere.
-     * (uses Math.floor)
+     * Plotzy Main Class
      * 
-     * @param loc Location
-     * @param center Sphere center
-     * @param radius Radius of sphere
-     * @return Boolean
-     * 
-     * @since 0.1
+     * @since 0.3
      */
-    private static boolean inSphere(Location loc, Location center, int radius) {
-        return Math.floor(loc.distanceSquared(center)) <= Math.pow(radius, 2D) ? true : false;
+    private static Plotzy pl;
+    
+    /**
+     * Constructor
+     * 
+     * @param instance 
+     * 
+     * @since 0.3
+     */
+    public PlotFunctions(Plotzy instance) {
+        pl = instance;
     }
     
     /**
-     * Checks if the location is within the specified plot.
+     * Gets the current plot the location is in.
      * 
      * @param loc
-     * @param plot_name
-     * @return Boolean
+     * @return Plot object
      * 
      * @since 0.1
      */
-    public static boolean inPlot(Location loc, String plot_name) {
-        ResultSet plotResultSet = getPlotResultSet(plot_name);
-        try {
-            plotResultSet.next();
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        int plotSize = getPlotSize(plotResultSet);
-        Location plotCenter = getPlotCenter(plotResultSet);
-        return inSphere(loc, plotCenter, plotSize);
-    }
-    
-    /**
-     * Gets the size of a given plot via ResultSet.
-     * 
-     * @param plotResultSet ResultSet row of the plot
-     * @return Integer
-     */
-    public static int getPlotSize(ResultSet plotResultSet) {
-        try {
-            return plotResultSet.getInt("pl_size");
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        return 0;
-    }    
-    
-    /**
-     * Gets the size of a given plot.
-     * 
-     * @param plotName
-     * @return String
-     * 
-     * @since 0.1
-     */
-    public static int getPlotSize(String plotName) {
-        try {
-            ResultSet rs = getPlotResultSet(plotName);
-            rs.next();
-            return rs.getInt("pl_size");
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        return 0;
-    }    
-    
-    /**
-     * Gets the center of a given plot via ResultSet.
-     * 
-     * @param plotResultSet ResultSet row of the plot
-     * @return Location
-     * 
-     * @since 0.1
-     */
-    public static Location getPlotCenter(ResultSet plotResultSet) {
-        try {
-            World world = Bukkit.getServer().getWorld(plotResultSet.getString("pl_world"));
-            int x = plotResultSet.getInt("pl_x");
-            int y = plotResultSet.getInt("pl_y");
-            int z = plotResultSet.getInt("pl_z");
-            return new Location(world, x, y, z);
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
+    public static Plot inWhichPlot(Location loc) {
+        for (Plot plot : pl.plotList.values()) {
+            if (plot.contains(loc) == true) return plot;
         }
         return null;
-    }
-    
-    /**
-     * Gets the name of the plot in the current row of the result set.
-     * 
-     * @param plotResultSet
-     * @return String
-     * 
-     * @since 0.1
-     */
-    private static String getPlotName(ResultSet plotResultSet) {
-        try {
-            return plotResultSet.getString("pl_name");
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        return null;
-    }
-    
-    /**
-     * Gets the ResultSet of the row of the plot.
-     * 
-     * @param plot_name
-     * @return ResultSet
-     * 
-     * @since 0.1
-     */
-    public static ResultSet getPlotResultSet(String plot_name) {
-        return Database.getResultSet("SELECT * FROM " + Database.prefix + "plotzy_plots WHERE pl_name = '" + plot_name + "'");
-    }
-    
-    /**
-     * Gets whether any given location is in a plot or not.
-     * 
-     * @param loc
-     * @return boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean inAPlot(Location loc) {
-        try {
-            ResultSet plots = getAllPlotsResultSet();
-            while (plots.next()) {
-                Location plotCenter = getPlotCenter(plots);
-                int plotSize = getPlotSize(plots);
-                if (inSphere(loc, plotCenter, plotSize)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        return false;
-    }
-    
-    /**
-     * Gets the name of the current plot the location is in.
-     * 
-     * @param loc
-     * @return Plot name
-     * 
-     * @since 0.1
-     */
-    public static String inWhichPlot(Location loc) {
-        try {
-            ResultSet plots = getAllPlotsResultSet();
-            while (plots.next()) {
-                Location plotCenter = getPlotCenter(plots);
-                int plotSize = getPlotSize(plots);
-                if (inSphere(loc, plotCenter, plotSize)) {
-                    return getPlotName(plots);
-                }
-            }
-            return null;
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
-        }
-        return null;
-    }
-    
-    /**
-     * Gets the ResultSet of all plots.
-     * 
-     * @param plot_name
-     * @return ResultSet
-     * 
-     * @since 0.1
-     */
-    private static ResultSet getAllPlotsResultSet() {
-        return Database.getResultSet("SELECT * FROM " + Database.prefix + "plotzy_plots");
     }
     
     /**
@@ -219,139 +65,69 @@ public class PlotFunctions {
      * @param plotName Desired plot name
      * @param size Radius of plot
      * @param center Center of plot
+     * @return Plot Plot
      * 
      * @since 0.1
      */
-    public static void createPlot(String plotName, int size, Location center) {
-        String world = center.getWorld().getName();
-        int x = center.getBlockX();
-        int y = center.getBlockY();
-        int z = center.getBlockZ();
-        Database.execute("INSERT INTO " + Database.prefix + "plotzy_plots VALUES (0, '" + plotName + "', '" + size + "', '" + world + "', '" + x + "', '" + y + "', '" + z + "')");
+    public static Plot createPlot(String plotName, Location center, int size) {
+        if (pl.mysql == true) Database.execute("INSERT INTO " + Database.prefix + "plotzy_plots VALUES (0, '" + plotName + "', '" + size + "', '" + center.getWorld().getName() + "', '" + center.getBlockX() + "', '" + center.getBlockY() + "', '" + center.getBlockZ() + "')");
+        pl.plotList.put(plotName, new Plot(plotName, center, size));
+        return pl.plotList.get(plotName);
     }
     
     /**
-     * Deletes the plot, associated player relationships, and flags of a plot.
+     * Gets the default radius from the configuration file.
      * 
-     * @param plotname 
-     * 
-     * @since 0.1
-     */
-    public static void deletePlot(String plotname) {
-        Database.execute("DELETE FROM " + Database.prefix + "plotzy_plots WHERE pl_name = '" + plotname + "'");
-        Database.execute("DELETE FROM " + Database.prefix + "plotzy_players WHERE py_plot = '" + plotname + "'");
-        Database.execute("DELETE FROM " + Database.prefix + "plotzy_flags WHERE fl_plot = '" + plotname + "'");
-    }
-    
-    /**
-     * Gives a player a role within the given plot.
-     * 
-     * @param plotName Plot name
-     * @param player Player to give role to
-     * @param role
-     *      1 = Owner, 2 = Builder, 3 = Resident
+     * @return int
      * 
      * @since 0.1
      */
-    public static void addPlotRole(String plotName, String player, int role) {
-        Database.execute("INSERT INTO " + Database.prefix + "plotzy_players VALUES (0, '" + plotName + "', '" + player + "', '" + role + "')");
-    }
-    
-    /**
-     * Returns the player's role within the given plot.
-     * 
-     * @param plotName
-     * @param player
-     * @return Player role:
-     *      1 = Owner, 2 = Builder, 3 = Resident
-     * 
-     * @since 0.1
-     */
-    private static int getPlotRole(String plotName, String player) {
-        int hasRole = Database.getInteger("SELECT COUNT(py_role) FROM " + Database.prefix + "plotzy_players WHERE py_plot = '" + plotName + "' AND py_player = '" + player + "'");
-        return hasRole != 0 ? Database.getInteger("SELECT py_role FROM " + Database.prefix + "plotzy_players WHERE py_plot = '" + plotName + "' AND py_player = '" + player + "'") : 0;
-    }
-    
-    /**
-     * Gets the plot founder's name.
-     * 
-     * @param plotName
-     * @return 
-     * 
-     * @since 0.1
-     */
-    public static String getPlotFounder(String plotName) {
-        return getPlotFlagString(plotName, "founder");
-    }
-    
-    /**
-     * Adds a new plot flag to the database.
-     * 
-     * @param plotName
-     * @param flag
-     * @param value 
-     * 
-     * @since 0.1
-     */
-    public static void addPlotFlag(String plotName, String flag, String value) {
-        Database.execute("INSERT INTO " + Database.prefix + "plotzy_flags VALUES (0, '" + plotName + "', '" + flag + "', '" + value + "')");
+    public static int getDefaultRadius() {
+        return Database.readInt("plot.default_radius") > 0 ? Database.readInt("plot.default_radius") : 10;
     }    
     
     /**
-     * Adds a new plot flag to the database.
+     * Gets the default radius from the configuration file.
      * 
-     * @param plotName
-     * @param flag
-     * @param value 
+     * @return int
      * 
      * @since 0.1
      */
-    public static void addPlotFlag(String plotName, String flag, boolean value) {
-        Database.execute("INSERT INTO " + Database.prefix + "plotzy_flags VALUES (0, '" + plotName + "', '" + flag + "', '" + value + "')");
-    }
+    public static int getDefaultCreateCost() {
+        return Database.readInt("plot.cost_create") > 0 ? Database.readInt("plot.cost_create") : 1000;
+    }    
     
     /**
-     * Gets a plot flag as a string from the database.
+     * Gets the default radius from the configuration file.
      * 
-     * @param plotName
-     * @param flag
-     * @param value
-     * @return Flag value as string
+     * @return int
      * 
      * @since 0.1
      */
-    public static String getPlotFlagString(String plotName, String flag) {
-        return Database.getString("SELECT fl_value FROM " + Database.prefix + "plotzy_flags WHERE fl_plot = '" + plotName + "' AND fl_flag = '" + flag + "'");
-    }   
+    public static int getDefaultExpandMultiplier() {
+        return Database.readInt("plot.cost_expand") > 0 ? Database.readInt("plot.cost_expand") : 10;
+    }    
     
     /**
-     * Gets a plot flag as a boolean from the database.
+     * Gets the default radius from the configuration file.
      * 
-     * @param plotName
-     * @param flag
-     * @param value
-     * @return Flag value as boolean
+     * @return int
      * 
      * @since 0.1
      */
-    public static boolean getPlotFlagBoolean(String plotName, String flag) {
-        return Boolean.parseBoolean(getPlotFlagString(plotName, flag));
-    }
+    public static int getMaxSizeAllowed() {
+        return Database.readInt("plot.max_size") > 0 ? Database.readInt("plot.max_size") : 100;
+    }    
     
     /**
-     * Creates a default plot for the given player.
+     * Gets the default radius from the configuration file.
      * 
-     * @param plotName Desired plot name
-     * @param player Player object of the player
+     * @return int
      * 
      * @since 0.1
      */
-    public static void createDefaultPlotForPlayer(String plotName, Player player) {
-        String playerName = player.getName();
-        createPlot(plotName, 10, player.getLocation());
-        addPlotRole(plotName, playerName, 1);
-        addPlotFlag(plotName, "private", true);
-        addPlotFlag(plotName, "founder", playerName);
+    public static int getMaxPlotsPerPlayer() {
+        return Database.readInt("plot.max_plots_per_player") > 0 ? Database.readInt("plot.max_plots_per_player") : 10;
     }
     
     /**
@@ -363,203 +139,7 @@ public class PlotFunctions {
      * @since 0.1
      */
     public static boolean plotExists(String plotName) {
-        int plotCount = Database.getInteger("SELECT COUNT(pl_name) FROM " + Database.prefix + "plotzy_plots WHERE pl_name = '" + plotName + "'");
-        return plotCount != 0 ? true : false;
-    }
-    
-    /**
-     * Checks if the plot is private.
-     * 
-     * @param plotName
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean plotIsPrivate(String plotName) {
-        return getPlotFlagBoolean(plotName, "private");
-    }
-    
-    /**
-     * Checks if the player can break blocks in the given plot.
-     * (Owner or Builder)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canBreakBlocksInPlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.block.break")) return true;
-        if (player.isOp()) return true;
-        int role = getPlotRole(plotName, player.getName());
-        return role == 1 || role == 2 ? true : false;
-    }    
-    
-    /**
-     * Checks if the player can place blocks in the given plot.
-     * (Owner or Builder)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canPlaceBlocksInPlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.block.place")) return true;
-        if (player.isOp()) return true;
-        int role = getPlotRole(plotName, player.getName());
-        return role == 1 || role == 2 || role == 3 ? true : false;
-    }
-    
-    /**
-     * Checks if the player can use buttons in the given plot.
-     * (Owner, Builder, or Resident)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canUseButtonsInPlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.use.buttons")) return true;
-        if (player.isOp()) return true;
-        if (plotIsPrivate(plotName)) {
-            int role = getPlotRole(plotName, player.getName());
-            return role == 1 || role == 2 || role == 3 ? true : false;
-        } else {
-            return true;
-        }
-    }    
-    /**
-     * Checks if the player can use levers in the given plot.
-     * (Owner, Builder, or Resident)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canUseLeversInPlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.use.levers")) return true;
-        if (player.isOp()) return true;
-        if (plotIsPrivate(plotName)) {
-            int role = getPlotRole(plotName, player.getName());
-            return role == 1 || role == 2 || role == 3 ? true : false;
-        } else {
-            return true;
-        }
-    }
-    
-    /**
-     * Checks if the player can delete the given plot.
-     * (Owner)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canDeletePlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.delete")) return true;
-        if (player.isOp()) return true;
-        int role = getPlotRole(plotName, player.getName());
-        return role == 1 ? true : false;
-    }    
-    
-    /**
-     * Checks if the player can expand the given plot.
-     * (Owner)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canExpandPlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.expand")) return true;
-        if (player.isOp()) return true;
-        int role = getPlotRole(plotName, player.getName());
-        return role == 1 ? true : false;
-    }    
-    
-    /**
-     * Checks if the player can shrink the given plot.
-     * (Owner)
-     * 
-     * @param plotName
-     * @param player
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean canShrinkPlot(String plotName, Player player) {
-        if (Plotzy.hasPermission(player, "plotzy.admin.shrink")) return true;
-        if (player.isOp()) return true;
-        int role = getPlotRole(plotName, player.getName());
-        return role == 1 ? true : false;
-    }
-    
-    /**
-     * Checks if two spheres overlap.
-     * 
-     * @param c1 Center of sphere 1
-     * @param c2 Center of sphere 2
-     * @param radius1 Radius of sphere 1
-     * @param radius2 Radius of sphere 2
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean spheresOverlap(Location c1, Location c2, double radius1, double radius2) {
-        return c1.distanceSquared(c2) <= Math.pow(radius1 + radius2, 2) ? true : false;
-    }  
-    
-    /**
-     * Checks if a sphere overlaps the given plot.
-     * 
-     * @param center The sphere's center.
-     * @param radius The sphere's radius.
-     * @param plot The given plot's ResultSet.
-     * @return Boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean sphereOverlapsPlot(Location center, double radius, ResultSet plot) {
-        return spheresOverlap(center, getPlotCenter(plot), radius, getPlotSize(plot)) ? true : false;
-    }    
-    
-    /**
-     * Checks if a sphere overlaps the given plot's influence.
-     * 
-     * @param center The sphere's center.
-     * @param radius The sphere's radius.
-     * @param plot The given plot's ResultSet.
-     * @return boolean
-     * 
-     * @since 0.1
-     */
-    public static boolean sphereOverlapsPlotInfluence(Location center, double radius, ResultSet plot) {
-        return spheresOverlap(center, getPlotCenter(plot), radius, getPlotSize(plot) * 1.5) ? true : false;
-    }
-    
-    /**
-     * Gets the name of the plot if the sphere overlaps it.
-     * 
-     * @param center The sphere's center.
-     * @param radius The sphere's radius.
-     * @param plot The given plot's ResultSet.
-     * @return String
-     * 
-     * @since 0.1
-     */
-    public static String sphereOverlapsPlotInfluenceName(Location center, double radius, ResultSet plot) {
-        return spheresOverlap(center, getPlotCenter(plot), radius, getPlotSize(plot) * 1.5) ? getPlotName(plot) : null;
+        return pl.plotList.containsKey(plotName) ? true : false;
     }
     
     /**
@@ -570,55 +150,22 @@ public class PlotFunctions {
      * @param radius
      * @return First plot found's name
      */
-    public static String sphereOverlapsWhichPlotInfluenceName(Location center, double radius) {
-        try {
-            ResultSet plots = getAllPlotsResultSet();
-            String plotName = null;
-            while (plots.next()) {
-                plotName = sphereOverlapsPlotInfluenceName(center, radius, plots);
-                if (plotName != null) return plotName;
-            }
-        } catch (SQLException ex) {
-            Database.sqlErrors(ex);
+    public static String getOverlappingPlot(Location center, double radius) {
+        for (Plot plot : pl.plotList.values()) {
+            if (plot.getCenter().distanceSquared(center) <= Math.pow(plot.getSize() * 1.5 + radius, 2)) return plot.getName();
         }
         return null;
     }
     
     /**
-     * Sets the size of the plot.
+     * Deletes a plot. For good.
      * 
-     * @param plotName
-     * @param size 
+     * @param plot 
      * 
-     * @since 0.1
+     * @since 0.3
      */
-    public static void setPlotSize(String plotName, int size) {
-        Database.execute("UPDATE " + Database.prefix + "plotzy_plots SET pl_size = '" + size + "' WHERE pl_name = '" + plotName + "'");
-    }
-    
-    /**
-     * Expands a plot.
-     * 
-     * @param plotName 
-     * @param byHowMuch Amount to expand by
-     * 
-     * @since 0.1
-     */
-    public static void expandPlot(String plotName, int byHowMuch) {
-        int size = getPlotSize(plotName);
-        setPlotSize(plotName, size + byHowMuch);
-    }
-    
-    /**
-     * Shrinks a plot.
-     * 
-     * @param plotName 
-     * @param byHowMuch Amount to shrink by
-     * 
-     * @since 0.1
-     */
-    public static void shrinkPlot(String plotName, int byHowMuch) {
-        int size = getPlotSize(plotName);
-        setPlotSize(plotName, size - byHowMuch);
+    public static void deletePlot(Plot plot) {
+        plot.delete();
+        pl.plotList.remove(plot.getName());
     }
 }

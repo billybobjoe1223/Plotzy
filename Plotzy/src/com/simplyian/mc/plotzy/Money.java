@@ -46,10 +46,11 @@ public class Money {
      * Gets the money of the player.
      * 
      * @param playerName 
+     * @return Player money
      * 
      * @since 0.1
      */
-    public double get(String playerName) {
+    public static double get(String playerName) {
         return pl.Method.getAccount(playerName).balance();
     }
     
@@ -58,9 +59,11 @@ public class Money {
      * 
      * @param playerName 
      * 
+     * @param amount 
+     * @return 
      * @since 0.1
      */
-    public boolean add(String playerName, double amount) {
+    public static boolean add(String playerName, double amount) {
         return pl.Method.getAccount(playerName).add(amount);
     }
     
@@ -68,10 +71,12 @@ public class Money {
      * Subtracts money from the player's account.
      * 
      * @param playerName 
+     * @param amount 
+     * @return
      * 
      * @since 0.1
      */
-    public boolean subtract(String playerName, double amount) {
+    public static boolean subtract(String playerName, double amount) {
         return pl.Method.getAccount(playerName).subtract(amount);
     }
 }

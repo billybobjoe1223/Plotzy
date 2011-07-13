@@ -20,8 +20,12 @@ package com.simplyian.mc.plotzy;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.register.payment.Method;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.logging.Logger;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -65,13 +69,6 @@ public class Plotzy extends JavaPlugin {
      * @since 0.1
      */
     private final PlotzySL serverListener = new PlotzySL(this);
-        
-    /**
-     * Money
-     * 
-     * @since 0.1
-     */
-    public Money money = new Money(this);  
     
     /**
      * Money
@@ -102,6 +99,27 @@ public class Plotzy extends JavaPlugin {
     public static PermissionHandler permissionHandler;
     
     /**
+     * Global plot ResultSet
+     * 
+     * @since 0.3
+     */
+    public HashMap<String, Plot> plotList;
+    
+    /**
+     * Access to static plot functions
+     * 
+     * @since 0.3
+     */
+    public PlotFunctions pf;
+    
+    /**
+     * Soon this will mean something.
+     * 
+     * @since 0.3
+     */
+    public boolean mysql = true;
+    
+    /**
      * Triggered on the enabling of the plugin.
      * 
      * @since 0.1
@@ -110,14 +128,17 @@ public class Plotzy extends JavaPlugin {
     public void onEnable() {
         PluginManager pm = this.getServer().getPluginManager();
         new Database(this);
+        new PlotFunctions(this);
+        new Money(this);
         pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Event.Priority.Normal, this);
         pm.registerEvent(Event.Type.BLOCK_PLACE, blockListener, Event.Priority.Normal, this);
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Event.Priority.Normal, this);
         pm.registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Event.Priority.Normal, this);
         pm.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Event.Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Event.Priority.Monitor, this);
-        playerLocs = new HashMap<String, Block>();
+        this.playerLocs = new HashMap<String, Block>();
         setupPermissions(); //Permissions support @since 0.2
+        this.plotList = this.getPlotList();
         log.info("[Plotzy] Plugin enabled."); //sc19.servercraft.co:3145
     }
 
@@ -188,5 +209,32 @@ public class Plotzy extends JavaPlugin {
      */
     public static boolean hasPermission(Player player, String permission) {
         return permissionHandler.has(player, permission) ? true : false;
+    }
+    
+    /**
+     * Gets a HashMap of all plots.
+     * 
+     * @return HashMap
+     * 
+     * @since 0.3
+     */
+    public static HashMap<String, Plot> getPlotList() {
+        HashMap<String, Plot> plotList = new HashMap<String, Plot>();
+        boolean mysql = true;
+        if (mysql == true) {
+            try {
+                ResultSet plots = Database.getResultSet("SELECT * FROM " + Database.prefix + "plotzy_plots");
+                while (plots.next()) {
+                    String plotName = plots.getString("pl_name");
+                    Location plotCenter = new Location(Bukkit.getServer().getWorld(plots.getString("pl_world")), plots.getInt("pl_x"), plots.getInt("pl_y"), plots.getInt("pl_z"));
+                    int plotSize = plots.getInt("pl_size");
+                    plotList.put(plotName, new Plot(plotName, plotCenter, plotSize));
+                }
+                return plotList;
+            } catch (SQLException ex) {
+                Database.sqlErrors(ex);
+            }
+        }
+        return null;
     }
 }

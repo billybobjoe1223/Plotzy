@@ -59,13 +59,11 @@ public class PlotzyBL extends BlockListener {
     public void onBlockBreak(BlockBreakEvent event) {
         if (event.isCancelled()) return;
         Player player = event.getPlayer();
-        if (!player.isOp()) {
-            String plotName = PlotFunctions.inWhichPlot(event.getBlock().getLocation());
-            if (plotName != null) { //Separating if blocks to prevent an unnecessary transaction
-                if (PlotFunctions.canBreakBlocksInPlot(plotName, player) == false) {
-                    player.sendMessage(ChatColor.RED + "Sorry, you don't have permission to break blocks in " + plotName + ".");
-                    event.setCancelled(true);
-                }
+        Plot plot = PlotFunctions.inWhichPlot(event.getBlock().getLocation());
+        if (plot != null) { //Separating if blocks to prevent an unnecessary transaction
+            if (plot.canBreakBlocks(player) == false) {
+                player.sendMessage(ChatColor.RED + "Sorry, you don't have permission to break blocks in " + plot.getName() + ".");
+                event.setCancelled(true);
             }
         }
     }
@@ -81,13 +79,11 @@ public class PlotzyBL extends BlockListener {
     public void onBlockPlace(BlockPlaceEvent event) {
         if (event.isCancelled()) return;
         Player player = event.getPlayer();
-        if (!player.isOp()) {
-            String plotName = PlotFunctions.inWhichPlot(event.getBlock().getLocation());
-            if (plotName != null) { //Separating if blocks to prevent an unnecessary transaction
-                if (PlotFunctions.canPlaceBlocksInPlot(plotName, player) == false) {
-                    player.sendMessage(ChatColor.RED + "Sorry, you don't have permission to place blocks in " + plotName + ".");
-                    event.setCancelled(true);
-                }
+        Plot plot = PlotFunctions.inWhichPlot(event.getBlock().getLocation());
+        if (plot != null) { //Separating if blocks to prevent an unnecessary transaction
+            if (plot.canPlaceBlocks(player) == false) {
+                player.sendMessage(ChatColor.RED + "Sorry, you don't have permission to place blocks in " + plot.getName() + ".");
+                event.setCancelled(true);
             }
         }
     }
